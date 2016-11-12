@@ -59,6 +59,7 @@ function viewer (link) {
   })
 
   feed.get(0, noop)
+
   require('hyperdrive-archive-swarm')(feed)
 
   var s = require('http').createServer(function (req, res) {
@@ -68,7 +69,8 @@ function viewer (link) {
       res.write(data)
 
       var offset = feed.blocks
-      if (offset) offset--
+      var buf = 4
+      while (buf-- && offset) offset--
 
       feed.prioritize({start: offset, priority: 5, linear: true})
       eos(res, function () {
