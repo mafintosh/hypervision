@@ -29,8 +29,8 @@ function producer () {
         mandatory: {
           chromeMediaSource: 'screen',
           chromeMediaSourceId: sources[0].id,
-          maxWidth: screen.availWidth,
-          maxHeight: screen.availHeight,
+          // maxWidth: screen.availWidth,
+          // maxHeight: screen.availHeight,
           minFrameRate: 25
         }
       }
@@ -45,7 +45,7 @@ function producer () {
       require('hyperdrive-archive-swarm')(feed)
 
       stream.on('data', function (data) {
-        console.log(data.length)
+        console.log(data.length, Math.floor(data.length / 16 / 1024), Math.floor(data.length / 10))
         feed.append(data)
       })
     }, function (err) {
