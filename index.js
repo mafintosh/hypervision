@@ -9,6 +9,7 @@ var raf = require('random-access-file')
 function noop () {}
 
 $('#record').onclick = function () {
+  clearInterval(interval)
   producer()
 }
 
@@ -28,7 +29,9 @@ function producer () {
         mandatory: {
           chromeMediaSource: 'screen',
           chromeMediaSourceId: sources[0].id,
-          minFrameRate: 30
+          maxWidth: screen.availWidth,
+          maxHeight: screen.availHeight,
+          minFrameRate: 25
         }
       }
     }, function (media) {
@@ -45,7 +48,9 @@ function producer () {
         console.log(data.length)
         feed.append(data)
       })
-    }, noop)
+    }, function (err) {
+      if (err) throw err
+    })
   })
 }
 
@@ -70,11 +75,13 @@ function viewer (link) {
 
       var offset = feed.blocks
       var buf = 4
-      while (buf-- && offset) offset--
+      while (buf-- && offset > 1) offset--
 
-      feed.prioritize({start: offset, priority: 5, linear: true})
+      var start = offset
+
+      feed.prioritize({start: start, priority: 5, linear: true})
       eos(res, function () {
-        feed.unprioritize({start: offset, priority: 5, linear: true})
+        feed.unprioritize({start: start, priority: 5, linear: true})
       })
 
       feed.get(offset, function loop (err, data) {
