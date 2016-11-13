@@ -9,16 +9,14 @@ var raf = require('random-access-file')
 function noop () {}
 
 $('#record').onclick = function () {
-  clearInterval(interval)
   producer()
 }
 
-var interval = setInterval(function () { // yolo
-  if ($('#link').value.length === 64) {
-    clearInterval(interval)
-    viewer($('#link').value)
+$('#link').oninput = function () {
+  if (this.value.length === 64) {
+    viewer(this.value)
   }
-}, 100)
+}
 
 function producer () {
   desktopCapturer.getSources({types: ['screen']}, function (err, sources) {
