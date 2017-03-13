@@ -2,24 +2,6 @@ var html = require('choo/html')
 var choo = require('choo')
 var app = choo()
 
-var onload = require('on-load')
-
-var desktopCapturer = require('electron').desktopCapturer
-var recorder = require('media-recorder-stream')
-var cluster = require('webm-cluster-stream')
-var eos = require('end-of-stream')
-var fs = require('fs')
-var raf = require('random-access-file')
-
-var $ = document.querySelector.bind(document)
-
-function noop () {}
-var feed
-var stream
-var swarm
-var blah
-var server
-
 app.model({
   state: {
     live: false,
