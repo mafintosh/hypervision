@@ -1,4 +1,9 @@
-var $ = document.querySelector.bind(document)
+var html = require('choo/html')
+var choo = require('choo')
+var app = choo()
+
+var onload = require('on-load')
+
 var desktopCapturer = require('electron').desktopCapturer
 var recorder = require('media-recorder-stream')
 var cluster = require('webm-cluster-stream')
@@ -6,93 +11,40 @@ var eos = require('end-of-stream')
 var fs = require('fs')
 var raf = require('random-access-file')
 
+var $ = document.querySelector.bind(document)
+
 function noop () {}
+var feed
+var stream
+var swarm
+var blah
+var server
 
-$('#record').onclick = function () {
-  producer()
-}
-
-$('#link').oninput = function () {
-  if (this.value.length === 64) {
-    viewer(this.value)
+app.model({
+  state: {
+    live: false,
+    quality: 3,
+    device: 'webcam'
+   },
+  reducers: {
+    toggleLive: function (state, data) {
+      return { live: data }
+    },
+    swapDevice: function (state, data) {
+      var device = state.device
+      return { device: (device === 'webcam') ? 'screen' : 'webcam' }
+    },
+    swapQuality: function (state, data) {
+      var quality = state.quality
+      return { quality: (quality === 1) ? 3 : (quality - 1) }
+    }
   }
-}
+})
 
-function producer () {
-  desktopCapturer.getSources({types: ['screen']}, function (err, sources) {
-    if (err) throw err
-    navigator.webkitGetUserMedia({
-      audio: false,
-      video: {
-        mandatory: {
-          chromeMediaSource: 'screen',
-          chromeMediaSourceId: sources[0].id,
-          // maxWidth: screen.availWidth,
-          // maxHeight: screen.availHeight,
-          minFrameRate: 25
-        }
-      }
-    }, function (media) {
-      var stream = recorder(media, {interval: 1000}).pipe(cluster())
-      var core = require('hypercore')(require('level')('producer.db'))
-      var feed = core.createFeed({
-        storage: raf('producer.data/' + Date.now() + '.feed')
-      })
+app.router([
+  ['/', require('./components/home')],
+  ['/broadcast', require('./components/broadcast')],
+  ['/view', require('./components/viewer')]
+])
 
-      document.body.innerHTML = feed.key.toString('hex')
-      require('hyperdrive-archive-swarm')(feed)
-
-      stream.on('data', function (data) {
-        console.log(data.length, Math.floor(data.length / 16 / 1024), Math.floor(data.length / 10))
-        feed.append(data)
-      })
-    }, function (err) {
-      if (err) throw err
-    })
-  })
-}
-
-function viewer (link) {
-  console.log('viewer')
-
-  var core = require('hypercore')(require('level')('viewer.db'))
-  var feed = core.createFeed(link, {
-    sparse: true,
-    storage: raf('viewer.data/' + link + '.feed')
-  })
-
-  feed.get(0, noop)
-
-  require('hyperdrive-archive-swarm')(feed)
-
-  var s = require('http').createServer(function (req, res) {
-    res.setHeader('Content-Type', 'video/webm')
-    feed.get(0, function (err, data) {
-      if (err) return res.end()
-      res.write(data)
-
-      var offset = feed.blocks
-      var buf = 4
-      while (buf-- && offset > 1) offset--
-
-      var start = offset
-
-      feed.prioritize({start: start, priority: 5, linear: true})
-      eos(res, function () {
-        feed.unprioritize({start: start, priority: 5, linear: true})
-      })
-
-      feed.get(offset, function loop (err, data) {
-        if (err) return res.end()
-        res.write(data, function () {
-          feed.get(++offset, loop)
-        })
-      })
-    })
-  })
-
-  s.listen(0, function () {
-    document.body.innerHTML = '<video autoplay controls>'
-    $('video').src = 'http://localhost:' + s.address().port + '/video.webm'
-  })
-}
+document.body.appendChild(app.start())
