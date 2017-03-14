@@ -92,7 +92,7 @@ module.exports = function (state, prev, send) {
     })
 
     // tune player into stream
-    window.server.listen(0, function () {
+    server.listen(0, function () {
       $('player').volume = 0.75
       $('player').src = 'http://localhost:' + server.address().port + '/video.webm'
     })
