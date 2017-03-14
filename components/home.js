@@ -5,7 +5,7 @@ module.exports = function (state, prev, send) {
     <main class="home">
       <div class="home-title">
         <div>hypervision</div>
-        <div>p2p livestreaming</div>
+        <div>p2p live streaming</div>
       </div>
 
       <div class="home-watch">
