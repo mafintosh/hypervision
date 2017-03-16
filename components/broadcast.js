@@ -152,8 +152,8 @@ module.exports = function (state, prev, send) {
 
     // create bitrate options
     var quality = state.quality
-    var video = quality.high ? 800000 : quality.medium ? 500000 : 200000
-    var audio = quality.high ? 128000 : quality.medium ? 64000 : 32000
+    var video = (quality === 3) ? 800000 : (quality === 2) ? 500000 : 200000
+    var audio = (quality === 3) ? 128000 : (quality === 2) ? 64000 : 32000
 
     var opts = {
       interval: 1000,
