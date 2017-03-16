@@ -6,10 +6,11 @@ var hyperdiscovery = require('hyperdiscovery')
 var desktopCapturer = require('electron').desktopCapturer
 var recorder = require('media-recorder-stream')
 var cluster = require('webm-cluster-stream')
+var pump = require('pump')
 
 var $ = document.getElementById.bind(document)
 
-var mediaStream, stream, feed, swarm
+var mediaStream, swarm
 
 module.exports = function (state, prev, send) {
   var settings = html`
@@ -164,11 +165,8 @@ module.exports = function (state, prev, send) {
     // create a MediaRecorder
     mediaStream = recorder(media, opts)
 
-    // pipe MediaRecorder to webm transform
-    stream = mediaStream.pipe(cluster())
-
     // create a new feed
-    feed = hypercore(`./streams/broadcasted/${ Date.now ()}`)
+    var feed = hypercore(`./streams/broadcasted/${ Date.now ()}`)
 
     // when feed is ready
     feed.on('ready', function () {
@@ -176,6 +174,14 @@ module.exports = function (state, prev, send) {
       swarm = hyperdiscovery(feed)
       // show user their stream's hash
       $('share').value = feed.key.toString('hex')
+    })
+
+    // pipe MediaRecorder to webm transform.
+    // when MediaRecorder is destroyed, close feed and swarm.
+    var stream = pump(mediaStream, cluster(), function (err) {
+      if (err) console.log('err: ', err)
+      swarm.close()
+      feed.close(function (err) { if (err) console.log('err: ', err) })
     })
 
     // append any new video to feed
@@ -192,11 +198,8 @@ module.exports = function (state, prev, send) {
     // clear share input
     $('share').value = ''
 
-    // close the stream
-    mediaStream.destroy()
-    stream.end()
-    feed.close(function (err) { if (err) console.log('err:', err) })
-    swarm.close()
+    // destory MediaRecorder
+    mediaStream.stop()
   }
 
   // when user's mouse enters window
