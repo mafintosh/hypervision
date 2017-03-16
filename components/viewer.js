@@ -1,9 +1,9 @@
 var html = require('choo/html')
 var onload = require('on-load')
 
+var hypercore = require('hypercore')
+var hyperdiscovery = require('hyperdiscovery')
 var eos = require('end-of-stream')
-var raf = require('random-access-file')
-var viewer = require('hypercore')(require('level')('viewer.db'))
 
 var $ = document.getElementById.bind(document)
 
@@ -54,15 +54,14 @@ module.exports = function (state, prev, send) {
     stream = state.location.search.stream
 
     // create feed from stream hash
-    feed = viewer.createFeed(stream, {
-      sparse: true,
-      storage: raf('viewer.data/' + stream + '.feed')
+    feed = hypercore(`./streams/viewed/${ Date.now ()}`, stream, {
+      sparse: true
     })
 
     feed.get(0, noop)
 
     // join p2p swarm
-    swarm = require('hyperdrive-archive-swarm')(feed)
+    swarm = hyperdiscovery(feed)
 
     // create an http server to deliver video to user
     server = require('http').createServer(function (req, res) {
@@ -71,17 +70,21 @@ module.exports = function (state, prev, send) {
         if (err) return res.end()
         res.write(data)
 
-        var offset = feed.blocks
+        var offset = feed.length
         var buf = 4
         while (buf-- && offset > 1) offset--
 
         var start = offset
 
-        feed.prioritize({start: start, priority: 5, linear: true})
+        // start downloading data
+        feed.download({start: start, linear: true})
+
+        // when response stream closes, stop downloading data
         eos(res, function () {
-          feed.unprioritize({start: start, priority: 5, linear: true})
+          feed.undownload({start: start, linear: true})
         })
 
+        // keep piping new data from feed to response stream
         feed.get(offset, function loop (err, data) {
           if (err) return res.end()
           res.write(data, function () {
