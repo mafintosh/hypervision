@@ -1,13 +1,12 @@
 var html = require('choo/html')
 var onload = require('on-load')
 
+var http = require('http')
 var hypercore = require('hypercore')
 var hyperdiscovery = require('hyperdiscovery')
 var eos = require('end-of-stream')
 
 var $ = document.getElementById.bind(document)
-
-var stream, feed, swarm, server
 
 function noop () {}
 
@@ -33,7 +32,7 @@ module.exports = function (state, prev, send) {
         </div>
 
         <div class="footer">
-          <a href="/" class="footer-button">Back to menu</div>
+          <div class="footer-button" onclick=${ mainMenu }>Back to menu</div>
           <div class="footer-share">
             <span class="footer-share-label">Share</span>
             <input class="footer-share-input" value=${ state.location.search.stream } readonly />
@@ -44,66 +43,67 @@ module.exports = function (state, prev, send) {
   `
 
   // attach view lifecycle functions
-  onload(div, load, unload)
+  onload(div, load)
 
   // return function to router
   return div
 
   // when view finishes loading
   function load () {
-    stream = state.location.search.stream
+    var stream = state.location.search.stream
 
     // create feed from stream hash
-    feed = hypercore(`./streams/viewed/${ Date.now ()}`, stream, {
+    var feed = hypercore(`./streams/viewed/${ Date.now ()}`, stream, {
       sparse: true
     })
 
-    feed.get(0, noop)
+    // when feed is ready, start watching the stream
+    feed.on('ready', function () {
+      feed.get(0, noop)
 
-    // join p2p swarm
-    swarm = hyperdiscovery(feed)
+      // join p2p swarm
+      var swarm = hyperdiscovery(feed)
 
-    // create an http server to deliver video to user
-    server = require('http').createServer(function (req, res) {
-      res.setHeader('Content-Type', 'video/webm')
-      feed.get(0, function (err, data) {
-        if (err) return res.end()
-        res.write(data)
-
-        var offset = feed.length
-        var buf = 4
-        while (buf-- && offset > 1) offset--
-
-        var start = offset
-
-        // start downloading data
-        feed.download({start: start, linear: true})
-
-        // when response stream closes, stop downloading data
-        eos(res, function () {
-          feed.undownload({start: start, linear: true})
-        })
-
-        // keep piping new data from feed to response stream
-        feed.get(offset, function loop (err, data) {
+      // create an http server to deliver video to user
+      var server = http.createServer(function (req, res) {
+        res.setHeader('Content-Type', 'video/webm')
+        feed.get(0, function (err, data) {
           if (err) return res.end()
-          res.write(data, function () {
-            feed.get(++offset, loop)
+          res.write(data)
+
+          var offset = feed.length
+          var buf = 4
+          while (buf-- && offset > 1) offset--
+
+          var start = offset
+
+          // start downloading data
+          feed.download({start: start, linear: true})
+
+          // when user stops watching stream, close everything down
+          eos(res, function () {
+            feed.undownload({start: start, linear: true})
+            server.close()
+            swarm.close()
+            feed.close(function (err) { if (err) console.log('err: ', err) })
+          })
+
+          // keep piping new data from feed to response stream
+          feed.get(offset, function loop (err, data) {
+            if (err) return res.end()
+            res.write(data, function () {
+              feed.get(++offset, loop)
+            })
           })
         })
       })
-    })
 
-    // tune player into stream
-    server.listen(0, function () {
-      $('player').volume = 0.75
-      $('player').src = 'http://localhost:' + server.address().port + '/video.webm'
+      // tune player into stream
+      server.listen(0, function () {
+        $('player').volume = 0.75
+        $('player').src = 'http://localhost:' + server.address().port + '/video.webm'
+      })
     })
-  }
-
-  // when view finishes unloading
-  function unload () {
-    // do something
   }
 
   // go jumbo vision
@@ -124,5 +124,11 @@ module.exports = function (state, prev, send) {
   // when user changes volume
   function volumeChange (e) {
     $('player').volume = e.target.value / 100
+  }
+
+  // exit stream and go back to menu
+  function mainMenu () {
+    $('player').src = ''
+    send('location:set', `/`)
   }
 }
