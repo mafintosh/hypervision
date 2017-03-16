@@ -1,11 +1,11 @@
 var html = require('choo/html')
 var onload = require('on-load')
 
-var producer = require('hypercore')(require('level')('producer.db'))
+var hypercore = require('hypercore')
+var hyperdiscovery = require('hyperdiscovery')
 var desktopCapturer = require('electron').desktopCapturer
 var recorder = require('media-recorder-stream')
 var cluster = require('webm-cluster-stream')
-var raf = require('random-access-file')
 
 var $ = document.getElementById.bind(document)
 
@@ -168,21 +168,21 @@ module.exports = function (state, prev, send) {
     stream = mediaStream.pipe(cluster())
 
     // create a new feed
-    feed = producer.createFeed({
-      storage: raf('producer.data/' + Date.now() + '.feed')
-    })
+    feed = hypercore(`./streams/broadcasted/${ Date.now ()}`)
 
-    // join p2p swarm
-    swarm = require('hyperdrive-archive-swarm')(feed)
+    // when feed is ready
+    feed.on('ready', function () {
+      // join p2p swarm
+      swarm = hyperdiscovery(feed)
+      // show user their stream's hash
+      $('share').value = feed.key.toString('hex')
+    })
 
     // append any new video to feed
     stream.on('data', function (data) {
       console.log(data.length, Math.floor(data.length / 16 / 1024), Math.floor(data.length / 10))
       feed.append(data)
     })
-
-    // show user their stream's hash
-    $('share').value = feed.key.toString('hex')
   }
 
   // when user stops broadcast
@@ -195,7 +195,7 @@ module.exports = function (state, prev, send) {
     // close the stream
     mediaStream.destroy()
     stream.end()
-    feed.close()
+    feed.close(function (err) { if (err) console.log('err:', err) })
     swarm.close()
   }
 
