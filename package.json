@@ -11,6 +11,7 @@
     "hyperdiscovery": "^1.2.0",
     "media-recorder-stream": "^2.1.1",
     "on-load": "^3.2.0",
+    "pump": "^1.0.2",
     "webm-cluster-stream": "^1.0.0"
   },
   "repository": {
