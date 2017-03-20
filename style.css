@@ -104,7 +104,7 @@ main {
 
   border-radius: 2px;
   padding: 0.5rem 0.65rem 0.5rem 0.6rem;
-  margin: 0 1rem 0 0;
+  margin: 0;
   font-weight: 500;
 }
 
@@ -248,4 +248,40 @@ input[type=range]::-webkit-slider-thumb {
   cursor: pointer;
   -webkit-appearance: none;
   margin-top: -5.5px;
+}
+
+.settings {
+  background: var(--color-off-white);
+}
+
+.sources-video {
+  margin: 0 0 1rem 0;
+}
+
+.sources-audio {
+  margin: 0 0 2rem 0;
+}
+
+.sources-title {
+  margin: 0 0 0.75rem 0;
+}
+
+.sources-select {
+  background: var(--color-white);
+  border-radius: 2px;
+  padding: 0.4rem 0 0.4rem 0.65rem;
+  width: 13rem;
+}
+
+.choose {
+	-webkit-appearance: none;
+  background: var(--color-white);
+  padding: 0.4rem 0 0.4rem 0.65rem;
+  border-radius: 2px;
+  border: none;
+  width: 13rem;
+  font-size: 16px;
+  color: var(--color-font-black);
+  letter-spacing: -0.04rem;
+  font-weight: 500;
 }

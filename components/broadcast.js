@@ -15,13 +15,13 @@ var mediaStream, swarm
 module.exports = function (state, prev, send) {
   var settings = html`
     <div class="header-section">
-      <div class="header-quality" onclick=${ swapQuality }>
+      <div class="header-quality" onclick=${ qualityToggle }>
         ${ qualityLabel() } quality
       </div>
 
-      <div class="header-device" onclick=${ swapDevice }>
-        ${ deviceLabel() }
-      </div>
+      <a href="/settings" class="header-device">
+        Settings
+      </a>
     </div>
   `
 
@@ -46,7 +46,7 @@ module.exports = function (state, prev, send) {
         </div>
 
         <div class="footer">
-          <a href="/" class="footer-button">Back to menu</div>
+          <a href="/" class="footer-button">Back to menu</a>
           <div class="footer-share">
             <span class="footer-share-label">Share</span>
             <input id="share" class="footer-share-input" readonly />
@@ -62,54 +62,18 @@ module.exports = function (state, prev, send) {
   // return function to router
   return div
 
-  // when view finishes loading
+  // when view finishes loading, turn on video/audio inputs
   function load () {
-    navigator.webkitGetUserMedia({
-      audio: true,
-      video: true,
-    }, function (media) {
-      window.media = media
-      $('player').srcObject = media
-    }, function (err) {
-      if (err) console.log('error: ', err)
-    })
-  }
+    var videoDevice = state.sources.selected.video
+    var audioDevice = state.sources.selected.audio
 
-  // when view finishes unloading
-  function unload () {
-    stopTracks()
-  }
+    var videoOpts = { video: true }
+    var audioOpts = { audio: true }
 
-  function qualityLabel () {
-    var quality = state.quality
-    return (quality === 1) ? 'Low' : (quality === 2) ? 'Medium' : 'High'
-  }
-
-  function deviceLabel () {
-    var device = state.device
-    return (device === 'webcam') ? 'Screen' : 'Webcam'
-  }
-
-  // stop all audio & video tracks
-  function stopTracks () {
-    var videoTracks = window.media.getVideoTracks()
-    var audioTracks = window.media.getAudioTracks()
-
-    videoTracks.forEach(function (track) { track.stop() })
-    audioTracks.forEach(function (track) { track.stop() })
-  }
-
-  // swap between webcam and screen capture
-  function swapDevice () {
-    stopTracks()
-
-    if (state.device === 'webcam') {
-      // screen capture doesn't support audio, so we
-      // append an audio track onto the video track
-      var audioConstr = { audio: true }
-      navigator.webkitGetUserMedia(audioConstr, function (audioStream) {
-        var screenConst = {
-          audio: false,
+    if (state.sources.selected.video) {
+      // if user has selected 'screen sharing'
+      if (videoDevice.kind === 'screen') {
+        videoOpts = {
           video: {
             mandatory: {
               chromeMediaSource: 'screen',
@@ -119,22 +83,35 @@ module.exports = function (state, prev, send) {
             }
           }
         }
-        navigator.webkitGetUserMedia(screenConst, function (media) {
-          media.addTrack(audioStream.getAudioTracks()[0])
-          window.media = media
-          $('player').srcObject = media
-        }, gumError)
-      }, gumError)
-    } else {
-      navigator.webkitGetUserMedia({
-        audio: true,
-        video: { maxFrameRate: 25 },
-      }, function (media) {
+      } else {
+        videoOpts = { video: { deviceId: { exact: videoDevice.deviceId } } }
+      }
+      audioOpts = { audio: { deviceId: { exact: audioDevice.deviceId } } }
+    }
+
+    // add audio stream to video stream
+    // (allows screen sharing with audio to work)
+    navigator.webkitGetUserMedia(audioOpts, function (audioStream) {
+      navigator.webkitGetUserMedia(videoOpts, function (media) {
+        media.addTrack(audioStream.getAudioTracks()[0])
         window.media = media
         $('player').srcObject = media
       }, gumError)
-    }
-    send('swapDevice')
+    }, gumError)
+  }
+
+  // when view finishes unloading, stop all audio & video tracks
+  function unload () {
+    var videoTracks = window.media.getVideoTracks()
+    var audioTracks = window.media.getAudioTracks()
+
+    videoTracks.forEach(function (track) { track.stop() })
+    audioTracks.forEach(function (track) { track.stop() })
+  }
+
+  function qualityLabel () {
+    var quality = state.quality
+    return (quality === 1) ? 'Low' : (quality === 2) ? 'Medium' : 'High'
   }
 
   // error handling for `getUserMedia`
@@ -143,26 +120,25 @@ module.exports = function (state, prev, send) {
   }
 
   // when user changes stream quality
-  function swapQuality () {
-    send('swapQuality')
+  function qualityToggle () {
+    send('qualityToggle')
   }
 
   // when user starts broadcast
   function startBroadcast () {
-    send('toggleLive', true)
+    send('liveToggle', true)
 
     // create bitrate options
     var quality = state.quality
     var video = (quality === 3) ? 800000 : (quality === 2) ? 500000 : 200000
     var audio = (quality === 3) ? 128000 : (quality === 2) ? 64000 : 32000
 
+    // create a MediaRecorder
     var opts = {
       interval: 1000,
       videoBitsPerSecond: video,
       audioBitsPerSecond: audio,
     }
-
-    // create a MediaRecorder
     mediaStream = recorder(media, opts)
 
     // create a new feed
@@ -193,7 +169,7 @@ module.exports = function (state, prev, send) {
 
   // when user stops broadcast
   function stopBroadcast () {
-    send('toggleLive', false)
+    send('liveToggle', false)
 
     // clear share input
     $('share').value = ''
