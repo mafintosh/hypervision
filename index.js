@@ -3,13 +3,12 @@ var choo = require('choo')
 var app = choo()
 
 app.use(function (state, emitter) {
-  state = {
-    live: false,
-    quality: 3,
-    sources: {
-      available: { video: [], audio: [] },
-      selected: { video: null, audio: null }
-    }
+
+   state.live = false
+   state.quality = 3
+   state.sources = {
+     available: { video: [], audio: [] },
+     selected: { video: null, audio: null }
    }
 
    emitter.on('liveToggle', function (bool) {
