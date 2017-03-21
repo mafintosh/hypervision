@@ -41,10 +41,6 @@ app.use(function (state, emitter) {
 
      emitter.emit('render')
    })
-
-   emitter.on('doodoo', function () {
-     emitter.emit('location:set', '/broadcast')
-   })
 })
 
 app.route('/', require('./components/home'))
