@@ -106,6 +106,7 @@ main {
   padding: 0.5rem 0.65rem 0.5rem 0.6rem;
   margin: 0;
   font-weight: 500;
+  text-decoration: none;
 }
 
 .header-quality {
