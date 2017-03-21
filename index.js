@@ -49,7 +49,7 @@ app.use(function (state, emitter) {
 })
 
 app.route('/', require('./components/home'))
-app.route('/broadcast', require('./components/home'))
+app.route('/broadcast', require('./components/broadcast'))
 app.route('/view', require('./components/viewer'))
 app.route('/settings', require('./components/settings'))
 
