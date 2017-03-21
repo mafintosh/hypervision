@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "description": "P2P Television",
   "dependencies": {
-    "choo": "^4.1.0",
+    "choo": "^5.0.0-5",
     "electron": "1.4.6",
     "end-of-stream": "^1.4.0",
     "getusermedia": "^2.0.0",

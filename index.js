@@ -2,55 +2,55 @@ var html = require('choo/html')
 var choo = require('choo')
 var app = choo()
 
-app.model({
-  state: {
+app.use(function (state, emitter) {
+  state = {
     live: false,
     quality: 3,
     sources: {
       available: { video: [], audio: [] },
       selected: { video: null, audio: null }
     }
-   },
-  reducers: {
-    liveToggle: function (state, data) {
-      return { live: data }
-    },
-    qualityToggle: function (state, data) {
-      var quality = state.quality
-      return { quality: (quality === 1) ? 3 : (quality - 1) }
-    },
-    sourcesAvailable: function (state, data) {
-      var selected = state.sources.selected
-      return {
-        sources: {
-          available: {
-            video: data.video,
-            audio: data.audio
-          },
-          selected: selected,
-        }
-      }
-    },
-    sourcesSelect: function (state, data) {
-      var available = state.sources.available
-      return {
-        sources: {
-          available: available,
-          selected: {
-            video: data.video,
-            audio: data.audio
-          }
-        }
-      }
-    }
-  }
+   }
+
+   emitter.on('liveToggle', function (bool) {
+     state.live = bool
+
+     emitter.emit('render')
+   })
+
+   emitter.on('qualityToggle', function () {
+     var quality = state.quality
+     state.quality = (quality === 1) ? 3 : (quality - 1)
+
+     emitter.emit('render')
+   })
+
+   emitter.on('sourcesAvailable', function (data) {
+     state.sources.available = {
+       video: data.video,
+       audio: data.audio
+     }
+
+     emitter.emit('render')
+   })
+
+   emitter.on('sourcesSelect', function (data) {
+     state.sources.selected = {
+       video: data.video,
+       audio: data.video
+     }
+
+     emitter.emit('render')
+   })
+
+   emitter.on('doodoo', function () {
+     emitter.emit('location:set', '/broadcast')
+   })
 })
 
-app.router([
-  ['/', require('./components/home')],
-  ['/broadcast', require('./components/broadcast')],
-  ['/view', require('./components/viewer')],
-  ['/settings', require('./components/settings')]
-])
+app.route('/', require('./components/home'))
+app.route('/broadcast', require('./components/home'))
+app.route('/view', require('./components/viewer'))
+app.route('/settings', require('./components/settings'))
 
 document.body.appendChild(app.start())

@@ -5,7 +5,7 @@ var mediaDevices = require('../lib/media-devices')
 
 var $ = document.getElementById.bind(document)
 
-module.exports = function (state, prev, send) {
+module.exports = function (state, emit) {
   var available = state.sources.available
   var selected = state.sources.selected
 
@@ -70,7 +70,7 @@ module.exports = function (state, prev, send) {
           label: 'Screen share'
         })
 
-        send('sourcesAvailable', {
+        emit('sourcesAvailable', {
           video: videoDevices,
           audio: audioDevices
         })
@@ -85,11 +85,11 @@ module.exports = function (state, prev, send) {
 
     var available = state.sources.available
 
-    send('sourcesSelect', {
+    emit('sourcesSelect', {
       video: available.video[video],
       audio: available.audio[audio],
     })
 
-    send('location:set', `/broadcast`)
+    emit('location:set', `/broadcast`)
   }
 }

@@ -1,6 +1,6 @@
 var html = require('choo/html')
 
-module.exports = function (state, prev, send) {
+module.exports = function (state, emit) {
   return html`
     <main class="home">
       <div class="home-title">
@@ -29,7 +29,7 @@ module.exports = function (state, prev, send) {
   // check validity of hash before opening viewer
   function inputUpdate (e) {
     if (e.target.value.length === 64) {
-      send('location:set', `/view?stream=${ e.target.value }`)
+      emit('location:set', `/view?stream=${ e.target.value }`)
     }
   }
 }

@@ -10,7 +10,7 @@ var $ = document.getElementById.bind(document)
 
 function noop () {}
 
-module.exports = function (state, prev, send) {
+module.exports = function (state, emit) {
   var div = html`
     <main onmouseover=${ hoverEnter } onmouseout=${ hoverLeave }>
       <div class="preview">
@@ -129,6 +129,6 @@ module.exports = function (state, prev, send) {
   // exit stream and go back to menu
   function mainMenu () {
     $('player').src = ''
-    send('location:set', `/`)
+    emit('location:set', `/`)
   }
 }

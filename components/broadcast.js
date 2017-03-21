@@ -12,7 +12,7 @@ var $ = document.getElementById.bind(document)
 
 var mediaStream, swarm
 
-module.exports = function (state, prev, send) {
+module.exports = function (state, emit) {
   var settings = html`
     <div class="header-section">
       <div class="header-quality" onclick=${ qualityToggle }>
@@ -121,12 +121,12 @@ module.exports = function (state, prev, send) {
 
   // when user changes stream quality
   function qualityToggle () {
-    send('qualityToggle')
+    emit('qualityToggle')
   }
 
   // when user starts broadcast
   function startBroadcast () {
-    send('liveToggle', true)
+    emit('liveToggle', true)
 
     // create bitrate options
     var quality = state.quality
@@ -169,7 +169,7 @@ module.exports = function (state, prev, send) {
 
   // when user stops broadcast
   function stopBroadcast () {
-    send('liveToggle', false)
+    emit('liveToggle', false)
 
     // clear share input
     $('share').value = ''
