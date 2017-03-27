@@ -47,7 +47,7 @@ main {
   box-sizing: border-box;
 }
 
-.overlay {
+/*.overlay {
     position: fixed;
     height: 100vh;
     width: 100vw;
@@ -285,4 +285,4 @@ input[type=range]::-webkit-slider-thumb {
   color: var(--color-font-black);
   letter-spacing: -0.04rem;
   font-weight: 500;
-}
+}*/
