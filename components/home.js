@@ -1,35 +1,47 @@
 var html = require('choo/html')
+var css = require('sheetify')
 
-module.exports = function (state, prev, send) {
+var link= require('./link')
+var input = require('./input')
+
+var style = css`
+  :host {
+    background: var(--color-off-white);
+    text-align: center;
+
+    .title {
+      font-size: 24px;
+      margin-bottom: 3rem;
+      letter-spacing: 0;
+    }
+
+    .watch { margin-bottom: 1.5rem; }
+    .label { margin-bottom: 0.5rem; }
+  }
+`
+
+module.exports = function (state, emit) {
   return html`
-    <main class="home">
-      <div class="home-title">
+    <main class=${ style }>
+      <div class="title">
         <div>hypervision</div>
         <div>p2p live streaming</div>
       </div>
 
-      <div class="home-watch">
-        <div class="home-watch-label">
-          Watch stream
-        </div>
-        <input class="home-watch-input" oninput=${ inputUpdate } />
+      <div class="watch">
+        <div class="label">Watch stream</div>
+        ${ input(state.hash, watch) }
       </div>
 
-      <div class="home-broadcast">
-        <div class="home-broadcast-label">
-          Start broadcasting
-        </div>
-        <a href="/broadcast" class="home-broadcast-button">
-          Go live
-        </a>
+      <div class="broadcast">
+        <div class="label">Start broadcasting</div>
+        ${ link('pink', 'Go live', '/broadcast') }
       </div>
     </main>
   `
 
-  // check validity of hash before opening viewer
-  function inputUpdate (e) {
-    if (e.target.value.length === 64) {
-      send('location:set', `/view?stream=${ e.target.value }`)
-    }
+  // check for valid hash, then open stream
+  function watch (e) {
+    emit('watch', e.target.value)
   }
 }

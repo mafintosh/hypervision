@@ -1,43 +1,83 @@
 var html = require('choo/html')
 var onload = require('on-load')
+var css = require('sheetify')
+
+var button = require('./button')
 
 var mediaDevices = require('../lib/media-devices')
 
 var $ = document.getElementById.bind(document)
 
-module.exports = function (state, prev, send) {
+var style = css`
+  :host {
+    background: var(--color-off-white);
+
+    section {
+      margin: 0 0 1.5rem 0;
+    }
+
+    .title { margin: 0 0.75rem 0 0; }
+
+    select {
+      -webkit-appearance: none;
+      background: var(--color-white);
+      padding: 0.4rem 0 0.4rem 0.65rem;
+      border-radius: 2px;
+      border: none;
+      width: 13rem;
+      font-size: 16px;
+      color: var(--color-font-black);
+      letter-spacing: -0.04rem;
+      font-weight: 500;
+    }
+  }
+`
+
+module.exports = function (state, emit) {
   var available = state.sources.available
   var selected = state.sources.selected
 
   var div = html`
-    <main class="settings">
-      <div class="sources-video">
-        <div class="sources-title">Video source</div>
-        <select class="choose" id="videoinput">
-          ${ available.video.map(function (device) {
-            if (selected.video && (selected.video.deviceId === device.deviceId)) {
-              return html`<option selected>${ device.label }</option>`
-            } else {
-              return html`<option>${ device.label }</option>`
-            }
-          })}
+    <main class=${ style }>
+      <section>
+        <label class="title">Video</label>
+        <select id="videoinput">
+          ${ available.video.map(videoOptions) }
         </select>
-      </div>
-      <div class="sources-audio">
-        <div class="sources-title">Audio source</div>
-        <select class="choose" id="audioinput">
-        ${ available.audio.map(function (device) {
-          if (selected.audio && (selected.audio.deviceId === device.deviceId)) {
-            return html`<option selected>${ device.label }</option>`
-          } else {
-            return html`<option>${ device.label }</option>`
-          }
-        })}
+      </section>
+
+      <section>
+        <label class="title">Audio</label>
+        <select id="audioinput">
+          ${ available.audio.map(audioOptions) }
         </select>
-      </div>
-      <div onclick=${ done } class="footer-button">Done</div>
+      </section>
+
+      ${ button('grey', 'Done', done) }
     </main>
   `
+
+  // populate <option>'s for video device list
+  function videoOptions (device, i) {
+    var video = selected.video && (selected.video.deviceId === device.deviceId)
+
+    if (video || (!video && (i === 0))) {
+      return html`<option selected>${ device.label }</option>`
+    } else {
+      return html`<option>${ device.label }</option>`
+    }
+  }
+
+  // populate <option>'s for audio device list
+  function audioOptions (device, i) {
+    var audio = selected.audio && (selected.audio.deviceId === device.deviceId)
+
+    if (audio || (!audio && (i === 0))) {
+      return html`<option selected>${ device.label }</option>`
+    } else {
+      return html`<option>${ device.label }</option>`
+    }
+  }
 
   // attach view lifecycle functions
   onload(div, load)
@@ -70,7 +110,7 @@ module.exports = function (state, prev, send) {
           label: 'Screen share'
         })
 
-        send('sourcesAvailable', {
+        emit('sourcesAvailable', {
           video: videoDevices,
           audio: audioDevices
         })
@@ -85,11 +125,9 @@ module.exports = function (state, prev, send) {
 
     var available = state.sources.available
 
-    send('sourcesSelect', {
+    emit('sourcesSelect', {
       video: available.video[video],
       audio: available.audio[audio],
     })
-
-    send('location:set', `/broadcast`)
   }
 }
