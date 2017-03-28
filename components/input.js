@@ -1,9 +1,9 @@
 var html = require('choo/html')
 var css = require('sheetify')
 
-module.exports = button
+module.exports = input
 
-function button (value, oninput) {
+function input (value, oninput) {
   var style = css`
     :host {
       font-size: 16px;
@@ -12,6 +12,7 @@ function button (value, oninput) {
       border: none;
       border-radius: 2px;
       font-weight: 500;
+      -webkit-user-select: auto;
     }
   `
 

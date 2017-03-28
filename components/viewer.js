@@ -2,14 +2,12 @@ var html = require('choo/html')
 var onload = require('on-load')
 var css = require('sheetify')
 
-var http = require('http')
-var hypercore = require('hypercore')
-var hyperdiscovery = require('hyperdiscovery')
-var eos = require('end-of-stream')
+var button = require('./button')
+var player = require('./player')
+
+var watch = require('../lib/watch')
 
 var $ = document.getElementById.bind(document)
-
-function noop () {}
 
 module.exports = function (state, emit) {
   var style = css`
@@ -28,14 +26,14 @@ module.exports = function (state, emit) {
         transition: opacity 0.5s
       }
 
-      .header {
+      header {
         display: flex;
         flex-direction: row;
         justify-content: space-between;
         padding: 1rem;
       }
 
-      .section {
+      section {
         display: flex;
         flex-direction: row;
       }
@@ -76,19 +74,11 @@ module.exports = function (state, emit) {
         margin-top: -5.5px;
       }
 
-      .footer {
+      footer {
         display: flex;
         flex-direction: row;
         justify-content: space-between;
         padding: 1rem;
-
-        .button {
-          background: var(--color-grey);
-          color: white;
-          border-radius: 2px;
-          padding: 0.5rem 0.65rem 0.5rem 0.6rem;
-          text-decoration: none;
-        }
 
         .share {
           display: flex;
@@ -112,31 +102,25 @@ module.exports = function (state, emit) {
   `
   var div = html`
     <main class=${ style } onmouseover=${ hoverEnter } onmouseout=${ hoverLeave }>
-      <div class="preview">
-        <video id="player" autoplay></video>
-      </div>
+      ${ player() }
       <div class="overlay" id="overlay">
-        <div class="header">
-          <div class="section">
-            <div class="fullscreen" style="background-color: ${ status.live ? '#F9364E' : '#d0d0d0' }" onclick=${ fullscreen }>
-              Fullscreen
-            </div>
-          </div>
-
-          <div class="section">
-            <div style="background: rgba(0, 0, 0, 0)">
+        <header>
+          <section>
+            ${ button('grey', 'Fullscreen', fullscreen) }
+          </section>
+          <section>
+            <div style="background:dd rgba(0, 0, 0, 0)">
               <input type="range" value=${ 75 } oninput=${ volumeChange } />
             </div>
-          </div>
-        </div>
-
-        <div class="footer">
-          <div class="button" onclick=${ mainMenu }>Back to menu</div>
+          </section>
+        </header>
+        <footer>
+          ${ button('grey', 'Back to menu', mainMenu) }
           <div class="share">
             <span>Share</span>
-            <input value=${ state.watching } readonly />
+            <input value=${ state.hash } readonly />
           </div>
-        </div>
+        </footer>
       </div>
     </main>
   `
@@ -147,65 +131,15 @@ module.exports = function (state, emit) {
   // return function to router
   return div
 
-  // when view finishes loading
+  // play stream on load
   function load () {
-    var stream = state.watch
-
-    // create feed from stream hash
-    var feed = hypercore(`./streams/viewed/${ Date.now ()}`, stream, {
-      sparse: true
-    })
-
-    // when feed is ready, start watching the stream
-    feed.on('ready', function () {
-      feed.get(0, noop)
-
-      // join p2p swarm
-      var swarm = hyperdiscovery(feed)
-
-      // create an http server to deliver video to user
-      var server = http.createServer(function (req, res) {
-        res.setHeader('Content-Type', 'video/webm')
-        feed.get(0, function (err, data) {
-          if (err) return res.end()
-          res.write(data)
-
-          var offset = feed.length
-          var buf = 4
-          while (buf-- && offset > 1) offset--
-
-          var start = offset
-
-          // start downloading data
-          feed.download({start: start, linear: true})
-
-          // when user stops watching stream, close everything down
-          eos(res, function () {
-            feed.undownload({start: start, linear: true})
-            server.close()
-            swarm.close()
-            feed.close(function (err) { if (err) console.log('err: ', err) })
-          })
-
-          // keep piping new data from feed to response stream
-          feed.get(offset, function loop (err, data) {
-            if (err) return res.end()
-            res.write(data, function () {
-              feed.get(++offset, loop)
-            })
-          })
-        })
-      })
-
-      // tune player into stream
-      server.listen(0, function () {
-        $('player').volume = 0.75
-        $('player').src = 'http://localhost:' + server.address().port + '/video.webm'
-      })
+    watch.start(state.hash, function (port) {
+      $('player').volume = 0.75
+      $('player').src = 'http://localhost:' + port + '/video.webm'
     })
   }
 
-  // go jumbo vision
+  // start jumbo vision
   function fullscreen () {
     $('player').webkitRequestFullscreen()
   }
@@ -225,9 +159,10 @@ module.exports = function (state, emit) {
     $('player').volume = e.target.value / 100
   }
 
-  // exit stream and go back to menu
+  // exit stream & go back to menu
   function mainMenu () {
     $('player').src = ''
-    emit('location:set', `/`)
+    emit('updateHash', '')
+    emit('redirect', `/`)
   }
 }

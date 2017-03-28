@@ -12,9 +12,11 @@ var style = css`
   :host {
     background: var(--color-off-white);
 
-    .video { margin: 0 0 1rem 0; }
-    .audio { margin: 0 0 2rem 0; }
-    .title { margin: 0 0 0.75rem 0; }
+    section {
+      margin: 0 0 1.5rem 0;
+    }
+
+    .title { margin: 0 0.75rem 0 0; }
 
     select {
       -webkit-appearance: none;
@@ -37,19 +39,19 @@ module.exports = function (state, emit) {
 
   var div = html`
     <main class=${ style }>
-      <div class="video">
-        <label class="title">Video source</label>
+      <section>
+        <label class="title">Video</label>
         <select id="videoinput">
           ${ available.video.map(videoOptions) }
         </select>
-      </div>
+      </section>
 
-      <div class="audio">
-        <label class="title">Audio source</label>
+      <section>
+        <label class="title">Audio</label>
         <select id="audioinput">
           ${ available.audio.map(audioOptions) }
         </select>
-      </div>
+      </section>
 
       ${ button('grey', 'Done', done) }
     </main>
@@ -67,7 +69,7 @@ module.exports = function (state, emit) {
   }
 
   // populate <option>'s for audio device list
-  function audioOptions (device) {
+  function audioOptions (device, i) {
     var audio = selected.audio && (selected.audio.deviceId === device.deviceId)
 
     if (audio || (!audio && (i === 0))) {

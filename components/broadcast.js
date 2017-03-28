@@ -5,6 +5,7 @@ var css = require('sheetify')
 var mediaDevices = require('../lib/media-devices')
 var broadcast = require('../lib/broadcast')
 var button = require('./button')
+var link = require('./link')
 
 var $ = document.getElementById.bind(document)
 
@@ -25,62 +26,41 @@ module.exports = function (state, emit) {
         transition: opacity 0.5s;
       }
 
-      .header {
-        display: flex;
-        flex-direction: row;
-        justify-content: space-between;
-        padding: 1rem;
-      }
-
-      .section {
-        display: flex;
-        flex-direction: row;
-      }
-
-      .status {
-        color: white;
-        text-align: center;
-        width: 4.2rem;
-        border-radius: 2px;
-        padding: 0.5rem 0.65rem 0.5rem 0.6rem;
-        margin: 0 1rem 0 0;
-      }
-
-      .start {
-        color: white;
-        border-radius: 2px;
-        padding: 0.5rem 0.65rem 0.5rem 0.6rem;
-        margin: 0 3rem 0 0;
-      }
-
-      .footer {
+      header {
         display: flex;
         flex-direction: row;
         justify-content: space-between;
         padding: 1rem;
 
-        a {
-          background: var(--color-grey);
-          color: white;
-          border-radius: 2px;
-          padding: 0.5rem 0.65rem 0.5rem 0.6rem;
-          text-decoration: none;
+        section {
+          display: flex;
+          flex-direction: row;
+
+          > * { margin-right: 1rem; }
+          :last-child { margin-right: 0; }
         }
       }
 
-      .share {
+      footer {
         display: flex;
         flex-direction: row;
-        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
 
-        span { padding: 0 1rem 0 0; }
+        .share {
+          display: flex;
+          flex-direction: row;
+          align-items: center;
 
-        input {
-          font-size: 16px;
-          padding: 0.4rem 0 0.4rem 0.65rem;
-          width: 14rem;
-          border: none;
-          border-radius: 2px;
+          span { padding: 0 1rem 0 0; }
+
+          input {
+            font-size: 16px;
+            padding: 0.4rem 0 0.4rem 0.65rem;
+            width: 14rem;
+            border: none;
+            border-radius: 2px;
+          }
         }
       }
     }
@@ -89,27 +69,26 @@ module.exports = function (state, emit) {
   var div = html`
     <main class=${ divStyle } onmouseover=${ hoverEnter } onmouseout=${ hoverLeave }>
       <div class="preview">
-        <video id="player" muted autoplay></video>
+        <video id="player" autoplay></video>
       </div>
       <div class="overlay" id="overlay">
-        <div class="header">
-          <div class="section">
-            ${ button('grey', state.live ? 'ON AIR' : 'OFF AIR') }
-            ${ button('green', state.live ? 'Stop' : 'Start', state.live ? stop : start) }
-          </div>
-          <div class="section">
-            ${ button('pink', qualityLabel() + 'quality') }
-            ${ button('pink', 'Settings') }
-          </div>
-        </div>
-
-        <div class="footer">
-          <a href="/">Back to menu</a>
+        <header>
+          <section>
+            ${ button(state.live ? 'red' : 'grey', state.live ? 'ON AIR' : 'OFF AIR') }
+            ${ button(state.live ? 'pink' : 'green', state.live ? 'Stop' : 'Start', state.live ? stop : start) }
+          </section>
+          <section>
+            ${ button('pink',  quality(), qualityToggle) }
+            ${ link('pink', 'Settings', '/settings') }
+          </section>
+        </header>
+        <footer>
+          ${ link('grey', 'Back to menu', '/') }
           <div class="share">
             <span>Share</span>
-            <input id="share" readonly />
+            <input id="share" value=${ state.hash } readonly />
           </div>
-        </div>
+        </footer>
       </div>
     </main>
   `
@@ -129,6 +108,7 @@ module.exports = function (state, emit) {
 
     mediaDevices.start(video, audio, function (mediaStream) {
       window.stream = mediaStream
+      $('player').volume = 0
       $('player').srcObject = mediaStream
     })
   }
@@ -138,14 +118,18 @@ module.exports = function (state, emit) {
     mediaDevices.stop()
   }
 
+  // generate label for quality toggle button
+  function quality () {
+    var qual = state.quality
+    return `${ ((qual === 1) ? 'Low' : (qual === 2) ? 'Medium' : 'High') } quality`
+  }
+
   // start broadcast
   function start () {
     var quality = state.quality
-
     broadcast.start(quality, window.stream, function (mediaRecorder, hash) {
       window.recorder = mediaRecorder
-      emit('liveToggle', true)
-      // add hash to state
+      emit('liveToggle', { live: true, hash: hash })
     })
   }
 
@@ -153,18 +137,12 @@ module.exports = function (state, emit) {
   function stop () {
     broadcast.stop(window.recorder, function () {
       emit('liveToggle', false)
-      // clear hash
     })
   }
 
   // when user changes stream quality
   function qualityToggle () {
     emit('qualityToggle')
-  }
-
-  function qualityLabel () {
-    var quality = state.quality
-    return (quality === 1) ? 'Low' : (quality === 2) ? 'Medium' : 'High'
   }
 
   // when user's mouse enters window

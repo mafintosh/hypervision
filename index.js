@@ -6,7 +6,7 @@ var app = choo()
 
 app.use(function (state, emitter) {
   // initial state
-  state.watch = ''
+  state.hash = ''
   state.live = false
   state.quality = 3
   state.sources = {
@@ -14,9 +14,10 @@ app.use(function (state, emitter) {
     selected: { video: null, audio: null }
   }
 
-  // toggle when starting/stopping broadcast
-  emitter.on('liveToggle', function (bool) {
-    state.live = bool
+  // toggle on  broadcast start/stop
+  emitter.on('liveToggle', function (data) {
+    emitter.emit('updateHash', data.live ? data.hash : '')
+    state.live = data.live
 
     emitter.emit('render')
   })
@@ -49,9 +50,18 @@ app.use(function (state, emitter) {
     emitter.emit('pushState', '/broadcast')
   })
 
+  // update stream hash
+  emitter.on('updateHash', function (data) {
+    state.hash = data
+  })
+
   // watch stream
   emitter.on('watch', function (data) {
-    state.watch = data
+    emitter.emit('updateHash', data)
+
+    if (state.hash.length === 64) {
+      emitter.emit('redirect', '/view')
+    }
   })
 
   // redirect utility

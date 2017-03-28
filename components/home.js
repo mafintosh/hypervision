@@ -1,7 +1,7 @@
 var html = require('choo/html')
 var css = require('sheetify')
 
-var button = require('./button')
+var link= require('./link')
 var input = require('./input')
 
 var style = css`
@@ -30,27 +30,18 @@ module.exports = function (state, emit) {
 
       <div class="watch">
         <div class="label">Watch stream</div>
-        ${ input(state.watch, watchStream) }
+        ${ input(state.hash, watch) }
       </div>
 
       <div class="broadcast">
         <div class="label">Start broadcasting</div>
-        ${ button('pink', 'Go live', startBroadcast) }
+        ${ link('pink', 'Go live', '/broadcast') }
       </div>
     </main>
   `
 
   // check for valid hash, then open stream
-  function watchStream (e) {
+  function watch (e) {
     emit('watch', e.target.value)
-
-    if (state.watch.length === 64) {
-      emit('redirect', `/view?stream=${ e.target.value }`)
-    }
-  }
-
-  // open broadcast screen
-  function startBroadcast () {
-    emit('redirect', '/broadcast')
   }
 }
