@@ -3,8 +3,10 @@ var path = require('path')
 
 var browserify = require('browserify')
 
+// output file
 var ws = fs.createWriteStream('bundle.js')
 
+// browserify options (mostly to work with Electron)
 var opts = {
   entries: './index.js',
   insertGlobals: true,
