@@ -6,14 +6,12 @@ module.exports = button
 function button (color, text, onclick) {
   var style = css`
     :host {
-      background: var(--color-pink);
       border: none;
       color: #FFFFFF;
-      padding: 0.35rem 0.6rem;
+      padding: 0.5rem 0.6rem 0.45rem 0.6rem;
       font-size: 18px;
       border-radius: 2px;
       text-decoration: none;
-      cursor: pointer;
       display: inline-flex;
       flex-direction: row;
       align-items: center;
@@ -22,8 +20,12 @@ function button (color, text, onclick) {
   `
 
   return html`
-    <div class=${ style } onclick=${ onclick }>
+    <div class=${ style } style=${ bgColor() } onclick=${ onclick }>
       ${ text }
     </div>
   `
+
+  function bgColor () {
+    return `background: var(--color-${ color });`
+  }
 }
