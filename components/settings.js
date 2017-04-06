@@ -99,15 +99,8 @@ module.exports = function (state, emit) {
         devices.forEach(function (device) {
           var kind = device.kind
 
-          if (kind === 'videoinput') videoDevices.push(device)
+          if (kind === 'videoinput' || kind === 'screen') videoDevices.push(device)
           if (kind === 'audioinput') audioDevices.push(device)
-        })
-
-        // add a screen share video input to list
-        videoDevices.push({
-          deviceId: 'screen',
-          kind: 'screen',
-          label: 'Screen share'
         })
 
         emit('sourcesAvailable', {
