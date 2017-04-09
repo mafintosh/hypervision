@@ -23,7 +23,6 @@
   },
   "scripts": {
     "start": "npm run build && electron app.js",
-    "rebuild": "npm rebuild --runtime=electron --target=$(electron --version) --disturl=https://atom.io/download/atom-shell --abi=$(electron --abi)",
     "build": "node build.js"
   },
   "author": "Mathias Buus (@mafintosh)",
